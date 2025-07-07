@@ -16,12 +16,25 @@
     flake-parts.lib.mkFlake { inherit inputs; } {
       systems = import inputs.systems;
       perSystem = { config, pkgs, system, ... }:
+        let
+          buildToolsVersion = "36.0.0";
+          androidComposition = pkgs.androidenv.composeAndroidPackages {
+            buildToolsVersions = [ buildToolsVersion ];
+            platformVersions = [ "36" ];
+            abiVersions = [ "armeabi-v7a" "arm64-v8a" ];
+            includeEmulator = "if-supported";
+            includeNDK = "if-supported";
+            includeSystemImages = "if-supported";
+            systemImageTypes = [ "google_apis_playstore" ];
+          };
+          androidSdk = androidComposition.androidsdk;
+        in
         {
           _module.args.pkgs = import nixpkgs {
             inherit system;
             config = {
               allowUnfree = true; # Allow unfree packages
-              # android_sdk.accept_license = true; # Accept Android SDK license
+              android_sdk.accept_license = true; # Accept Android SDK license
             };
             overlays = [
               rust-overlay.overlays.default
@@ -50,6 +63,10 @@
               librsvg
 
               rustup
+              androidSdk
+
+              # JDK for Android development
+              jdk
             ]
             ++ lib.optionals (system == "x86_64-linux") [
               # WebKit for Tauri
@@ -57,8 +74,8 @@
             ];
 
             shellHook = ''
-              export ANDROID_HOME=${pkgs.androidenv.androidPkgs.tools}/libexec/android-sdk/
-              export NDK_HOME=${pkgs.androidenv.androidPkgs.ndk-bundle}/libexec/android-sdk/ndk/28.1.13356709/
+              export ANDROID_HOME=${androidSdk}/libexec/android-sdk
+              export NDK_HOME=${androidSdk}/libexec/android-sdk/ndk-bundle
             '';
           };
         };
