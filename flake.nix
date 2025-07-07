@@ -43,7 +43,7 @@
           # When execute `nix develop`, you go in shell installed nil.
           devShells.default = pkgs.mkShell {
             packages = with pkgs; [
-              nodejs
+              bun
               pkg-config
               (rust-bin.stable.latest.default.override {
                 extensions = [ "rust-src" "rust-analyzer" ];
