@@ -11,10 +11,10 @@ function App() {
 		setShowConnectionForm(true);
 	};
 
-	const handleSaveConnection = async (config: SshConfig) => {
+	const handleSaveConnection = async (_config: SshConfig) => {
 		setShowConnectionForm(false);
 		// Trigger refresh of sessions in SshManager
-		setRefreshSessions(prev => prev + 1);
+		setRefreshSessions((prev) => prev + 1);
 	};
 
 	const handleCancelConnection = () => {
@@ -29,8 +29,8 @@ function App() {
 					onSave={handleSaveConnection}
 				/>
 			) : (
-				<SshManager 
-					onCreateSession={handleCreateSession} 
+				<SshManager
+					onCreateSession={handleCreateSession}
 					refreshTrigger={refreshSessions}
 				/>
 			)}

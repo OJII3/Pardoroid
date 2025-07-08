@@ -84,13 +84,13 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({
 
 		try {
 			setIsCreating(true);
-			
+
 			// Create SSH connection
 			const sessionId = await sshService.createConnection(config);
-			
+
 			// Connect to the session
 			await sshService.connect(sessionId);
-			
+
 			toast.success("SSH接続が正常に作成されました");
 			onSave(config);
 		} catch (error) {
@@ -361,10 +361,15 @@ export const ConnectionForm: React.FC<ConnectionFormProps> = ({
 
 					{/* ボタン */}
 					<div className="flex justify-end gap-2">
-						<FormButton onClick={onCancel} type="button" variant="outline" disabled={isCreating}>
+						<FormButton
+							disabled={isCreating}
+							onClick={onCancel}
+							type="button"
+							variant="outline"
+						>
 							キャンセル
 						</FormButton>
-						<FormButton type="submit" disabled={isCreating}>
+						<FormButton disabled={isCreating} type="submit">
 							{isCreating ? "接続中..." : "接続設定を保存"}
 						</FormButton>
 					</div>

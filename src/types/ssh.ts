@@ -32,6 +32,19 @@ export interface CommandResult {
 	stderr: string;
 }
 
+export interface TerminalSession {
+	id: string;
+	ssh_session_id: string;
+	created_at: string;
+	is_active: boolean;
+}
+
+export interface TerminalData {
+	session_id: string;
+	data: string;
+	timestamp: string;
+}
+
 export interface TransferProgress {
 	transferred: number;
 	total: number;

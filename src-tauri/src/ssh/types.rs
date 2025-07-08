@@ -50,6 +50,23 @@ pub struct CommandResult {
     pub stderr: String,
 }
 
+/// ターミナルセッション情報
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TerminalSession {
+    pub id: String,
+    pub ssh_session_id: String,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub is_active: bool,
+}
+
+/// ターミナルデータ
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TerminalData {
+    pub session_id: String,
+    pub data: String,
+    pub timestamp: chrono::DateTime<chrono::Utc>,
+}
+
 /// ファイル転送の進捗情報
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TransferProgress {

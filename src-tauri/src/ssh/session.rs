@@ -136,6 +136,25 @@ impl SshSessionManager {
 
         Ok(())
     }
+
+    /// SSHセッションの接続を取得（ターミナル用）
+    pub async fn get_connection(&self, session_id: &str) -> Result<Handle<SshClientHandler>, SshError> {
+        let sessions = self.sessions.read().await;
+        let session_arc = sessions
+            .get(session_id)
+            .ok_or_else(|| SshError::SessionNotFound(session_id.to_string()))?
+            .clone();
+
+        let session = session_arc.lock().await;
+        match &session.connection {
+            Some(_handle) => {
+                // HandleはCloneできないので、新しい接続を作成する必要がある
+                // 今回は簡易的に、接続が存在することを確認してダミーのHandleを返す
+                Err(SshError::CommandFailed("Cannot clone SSH connection handle. Terminal feature requires refactoring.".to_string()))
+            },
+            None => Err(SshError::ConnectionFailed("SSH session not connected".to_string()))
+        }
+    }
 }
 
 impl SshSession {
@@ -219,23 +238,65 @@ impl SshSession {
         Ok(())
     }
 
-    async fn execute_command(&mut self, _command: &str) -> Result<CommandResult, SshError> {
+    async fn execute_command(&mut self, command: &str) -> Result<CommandResult, SshError> {
         let connection = self
             .connection
             .as_mut()
             .ok_or_else(|| SshError::CommandFailed("Not connected".to_string()))?;
 
-        let _channel = connection
+        let mut channel = connection
             .channel_open_session()
             .await
             .map_err(|e| SshError::CommandFailed(e.to_string()))?;
 
-        // TODO: russhライブラリの実際のAPIを使用してコマンドを実行
-        // 現在は簡単な実装として、結果を返すだけにしています
+        // Execute the command
+        channel
+            .exec(true, command)
+            .await
+            .map_err(|e| SshError::CommandFailed(e.to_string()))?;
+
+        // Read the output
+        let mut stdout = Vec::new();
+        let mut stderr = Vec::new();
+        let mut exit_code = 0;
+
+
+        // Read all data from the channel
+        loop {
+            use russh::ChannelMsg;
+            
+            match channel.wait().await {
+                Some(ChannelMsg::Data { data }) => {
+                    stdout.extend_from_slice(&data);
+                }
+                Some(ChannelMsg::ExtendedData { data, ext: 1 }) => {
+                    stderr.extend_from_slice(&data);
+                }
+                Some(ChannelMsg::ExitStatus { exit_status }) => {
+                    exit_code = exit_status;
+                }
+                Some(ChannelMsg::Eof) => {
+                    break;
+                }
+                Some(ChannelMsg::Close) => {
+                    break;
+                }
+                Some(_) => {
+                    // Handle other message types if needed
+                }
+                None => {
+                    break;
+                }
+            }
+        }
+
+        // Close the channel
+        let _ = channel.close().await;
+
         Ok(CommandResult {
-            exit_code: 0,
-            stdout: "Command executed".to_string(), // TODO: 実際の出力を取得
-            stderr: String::new(),
+            exit_code,
+            stdout: String::from_utf8_lossy(&stdout).to_string(),
+            stderr: String::from_utf8_lossy(&stderr).to_string(),
         })
     }
 
